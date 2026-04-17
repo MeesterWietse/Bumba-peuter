@@ -1,0 +1,6 @@
+{
+  "name": "Circus Speeldoos",
+  "description": "Een circus game die met manifest.json installeerbaar is. Bevat Bumba spelletjes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
