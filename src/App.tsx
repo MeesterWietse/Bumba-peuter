@@ -86,27 +86,23 @@ export default function App() {
     }
   }, []);
 
-  const createAudioContext = () => {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return null;
-    return new AudioContext();
-  };
-
-  const closeAudioContext = () => {
-    if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
-      try {
-        const promise = audioCtxRef.current.close();
-        if (promise && promise.catch) {
-          promise.catch((e: any) => console.log('AudioContext al gesloten:', e));
-        }
-      } catch (e) {
-        console.log('AudioContext sluiten mislukt:', e);
+  // Shared global context om mobile limitations en audio clippings te vermijden
+  const getAudioContext = useCallback(() => {
+    if (!(window as any).sharedAudioCtx) {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContext) {
+        (window as any).sharedAudioCtx = new AudioContext();
       }
     }
-    audioCtxRef.current = null;
-  };
+    const ctx = (window as any).sharedAudioCtx;
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    return ctx;
+  }, []);
 
   const startSorterGame = (easy = false) => {
+    getAudioContext();
     if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
     setScore(0);
     setIsEasyMode(easy);
@@ -147,6 +143,7 @@ export default function App() {
   };
 
   const startMusicGame = () => {
+    getAudioContext();
     if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
     setGameState('music');
     speak('Tijd voor muziek! Speel maar mee!');
@@ -161,7 +158,7 @@ export default function App() {
   const playNote = (freq: number) => {
     setActiveDance('wiggle');
     addFloatingNote('🎵');
-    const ctx = createAudioContext();
+    const ctx = getAudioContext();
     if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -179,7 +176,7 @@ export default function App() {
   const playDrum = () => {
     setActiveDance('bounce');
     addFloatingNote('💥');
-    const ctx = createAudioContext();
+    const ctx = getAudioContext();
     if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -198,7 +195,7 @@ export default function App() {
   const playHorn = () => {
     setActiveDance('wiggle');
     addFloatingNote('🎺');
-    const ctx = createAudioContext();
+    const ctx = getAudioContext();
     if (!ctx) return;
     const filter = ctx.createBiquadFilter();
     const gain = ctx.createGain();
@@ -223,7 +220,7 @@ export default function App() {
   const playBell = () => {
     setActiveDance('shake');
     addFloatingNote('🔔');
-    const ctx = createAudioContext();
+    const ctx = getAudioContext();
     if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -241,7 +238,7 @@ export default function App() {
   const playWhistle = () => {
     setActiveDance('jump');
     addFloatingNote('🐦');
-    const ctx = createAudioContext();
+    const ctx = getAudioContext();
     if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -262,7 +259,7 @@ export default function App() {
   const playAccordion = () => {
     setActiveDance('wiggle');
     addFloatingNote('🪗');
-    const ctx = createAudioContext();
+    const ctx = getAudioContext();
     if (!ctx) return;
     const playReeds = (freq: number, startTime: number) => {
       const osc1 = ctx.createOscillator();
@@ -298,7 +295,7 @@ export default function App() {
   const playMagic = () => {
     setActiveDance('spin');
     addFloatingNote('✨');
-    const ctx = createAudioContext();
+    const ctx = getAudioContext();
     if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -319,6 +316,7 @@ export default function App() {
   };
 
   const startBalloonGame = () => {
+    getAudioContext();
     if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
     setBalloons([]);
     setGameState('balloons');
@@ -346,7 +344,7 @@ export default function App() {
 
   const playPop = () => {
     setActiveDance('jump');
-    const ctx = createAudioContext();
+    const ctx = getAudioContext();
     if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -375,7 +373,7 @@ export default function App() {
   
   useEffect(() => {
     if (gameState === 'catch') {
-      const ctx = createAudioContext();
+      const ctx = getAudioContext();
       audioCtxRef.current = ctx;
       if (!ctx) return;
 
@@ -403,12 +401,10 @@ export default function App() {
       }, 250);
     } else {
       if (musicIntervalRef.current) clearInterval(musicIntervalRef.current);
-      closeAudioContext();
     }
 
     return () => {
       if (musicIntervalRef.current) clearInterval(musicIntervalRef.current);
-      closeAudioContext();
     };
   }, [gameState]);
 
@@ -429,6 +425,7 @@ export default function App() {
   }, []);
 
   const startCatchGame = () => {
+    getAudioContext();
     if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
     setScore(0);
     setIsCaught(false);
@@ -447,7 +444,7 @@ export default function App() {
   }, [gameState, isCaught, moveBumba]);
 
   const playCatchSound = () => {
-    const ctx = createAudioContext();
+    const ctx = getAudioContext();
     if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
